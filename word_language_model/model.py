@@ -11,6 +11,7 @@ class FNNModel(nn.Module):
         self.drop = nn.Dropout(dropout)
         self.encoder = nn.Embedding(ntoken, ninp)
         self.fnn = nn.Linear(ninp*(n-1), ninp)
+        self.tanh = nn.Tanh()
         self.decoder = nn.Linear(ninp, ntoken)
 
         if tie_weights:
@@ -37,12 +38,19 @@ class FNNModel(nn.Module):
         emb = emb.unfold(0,self.n-1,1) # sliding window, emb: [len,n-1,batch_size,hidden]
         emb = emb.permute(0,2,1,3) # emb: [len, batch_size, n-1, hidden]
         emb = emb.contiguous().view(in_size[0], in_size[1], -1) # emb: [len, batch_size, (n-1)*hidden]
-        output = self.fnn(emb) # output: [len, batch_size, hidden]
+        output = self.tanh(self.fnn(emb)) # output: [len, batch_size, hidden]
         output = self.drop(output)
         decoded = self.decoder(output) # decoded: [len, batch_size, self.n_token]
         decoded = decoded.view(-1, self.ntoken)
         return F.log_softmax(decoded, dim=1)
-
+    '''
+    def forward(self, input):
+        # input: [n-1, batch_size]
+        emb = self.drop(self.encoder(input)) # emb: [n-1, batch_size, hidden]
+        emb = emb.permute(1,0,2)
+        emb = emb.view(input.size()[1], -1) # emb: [batch_size, (n-1)*hidden]
+        output = self.fnn(emb)
+    '''
 
 class RNNModel(nn.Module):
     """Container module with an encoder, a recurrent module, and a decoder."""
