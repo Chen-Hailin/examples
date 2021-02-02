@@ -20,6 +20,9 @@ class Dictionary(object):
 class Corpus(object):
     def __init__(self, path):
         self.dictionary = Dictionary()
+        # First add special tokens
+        self.dictionary.add_word('<pad>')
+        
         self.train = self.tokenize(os.path.join(path, 'train.txt'))
         self.valid = self.tokenize(os.path.join(path, 'valid.txt'))
         self.test = self.tokenize(os.path.join(path, 'test.txt'))

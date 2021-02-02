@@ -13,10 +13,12 @@ import model
 parser = argparse.ArgumentParser(description='PyTorch Wikitext-2 RNN/LSTM/GRU/Transformer Language Model')
 parser.add_argument('--data', type=str, default='./data/wikitext-2',
                     help='location of the data corpus')
-parser.add_argument('--model', type=str, default='LSTM',
-                    help='type of recurrent net (RNN_TANH, RNN_RELU, LSTM, GRU, Transformer)')
+parser.add_argument('--model', type=str, default='FNN',
+                    help='type of recurrent net (RNN_TANH, RNN_RELU, LSTM, GRU, Transformer,FNN)')
 parser.add_argument('--emsize', type=int, default=200,
                     help='size of word embeddings')
+parser.add_argument('--n', type=int, default=5,
+                    help='length of context words')
 parser.add_argument('--nhid', type=int, default=200,
                     help='number of hidden units per layer')
 parser.add_argument('--nlayers', type=int, default=2,
@@ -41,7 +43,7 @@ parser.add_argument('--cuda', action='store_true',
                     help='use CUDA')
 parser.add_argument('--log-interval', type=int, default=200, metavar='N',
                     help='report interval')
-parser.add_argument('--save', type=str, default='model.pt',
+parser.add_argument('--save', type=str, default='model_fnn.pt',
                     help='path to save the final model')
 parser.add_argument('--onnx-export', type=str, default='',
                     help='path to export the final model in onnx format')
@@ -100,6 +102,8 @@ test_data = batchify(corpus.test, eval_batch_size)
 ntokens = len(corpus.dictionary)
 if args.model == 'Transformer':
     model = model.TransformerModel(ntokens, args.emsize, args.nhead, args.nhid, args.nlayers, args.dropout).to(device)
+elif args.model == 'FNN':
+    model = model.FNNModel(args.n, ntokens, args.emsize, args.dropout, args.tied).to(device)
 else:
     model = model.RNNModel(args.model, ntokens, args.emsize, args.nhid, args.nlayers, args.dropout, args.tied).to(device)
 
@@ -140,7 +144,7 @@ def evaluate(data_source):
     model.eval()
     total_loss = 0.
     ntokens = len(corpus.dictionary)
-    if args.model != 'Transformer':
+    if args.model != 'Transformer' and args.model != 'FNN':
         hidden = model.init_hidden(eval_batch_size)
     with torch.no_grad():
         for i in range(0, data_source.size(0) - 1, args.bptt):
@@ -148,6 +152,8 @@ def evaluate(data_source):
             if args.model == 'Transformer':
                 output = model(data)
                 output = output.view(-1, ntokens)
+            elif args.model == 'FNN':
+                output = model(data)
             else:
                 output, hidden = model(data, hidden)
                 hidden = repackage_hidden(hidden)
@@ -161,7 +167,7 @@ def train():
     total_loss = 0.
     start_time = time.time()
     ntokens = len(corpus.dictionary)
-    if args.model != 'Transformer':
+    if args.model != 'Transformer' and args.model != 'FNN':
         hidden = model.init_hidden(args.batch_size)
     for batch, i in enumerate(range(0, train_data.size(0) - 1, args.bptt)):
         data, targets = get_batch(train_data, i)
@@ -171,6 +177,8 @@ def train():
         if args.model == 'Transformer':
             output = model(data)
             output = output.view(-1, ntokens)
+        elif args.model == 'FNN':
+            output = model(data)
         else:
             hidden = repackage_hidden(hidden)
             output, hidden = model(data, hidden)

@@ -3,6 +3,47 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+class FNNModel(nn.Module):
+    def __init__(self, n, ntoken, ninp, dropout=0.5, tie_weights=False):
+        super(FNNModel, self).__init__()
+        self.model_type = 'FNN'
+        self.ntoken = ntoken
+        self.drop = nn.Dropout(dropout)
+        self.encoder = nn.Embedding(ntoken, ninp)
+        self.fnn = nn.Linear(ninp*(n-1), ninp)
+        self.decoder = nn.Linear(ninp, ntoken)
+
+        if tie_weights:
+            self.decoder.weight = self.encoder.weight
+
+        self.init_weights()
+
+        self.nlayers = 1
+        self.ninp = ninp
+        self.n = n
+
+    def init_weights(self):
+        initrange = 0.1
+        nn.init.uniform_(self.encoder.weight, -initrange, initrange)
+        nn.init.zeros_(self.decoder.weight)
+        nn.init.uniform_(self.decoder.weight, -initrange, initrange)
+
+    def forward(self, input):
+        # input: [len, batch_size]
+        in_size = input.size()
+        input = F.pad(input, (0,0,self.n-1,0), "constant", 0) # input: [n-1+len, batch_size], assume <pad> idx = 0
+        #import pdb;pdb.set_trace()
+        emb = self.drop(self.encoder(input)) # emb: [n-1+len, batch_size, hidden]
+        emb = emb.unfold(0,self.n-1,1)[:-1] # sliding window, emb: [len,n-1,batch_size,hidden]
+        emb = emb.permute(0,2,1,3) # emb: [len, batch_size, n-1, hidden]
+        emb = emb.contiguous().view(in_size[0], in_size[1], -1) # emb: [len, batch_size, (n-1)*hidden]
+        output = self.fnn(emb) # output: [len, batch_size, hidden]
+        output = self.drop(output)
+        decoded = self.decoder(output) # decoded: [len, batch_size, self.n_token]
+        decoded = decoded.view(-1, self.ntoken)
+        return F.log_softmax(decoded, dim=1)
+
+
 class RNNModel(nn.Module):
     """Container module with an encoder, a recurrent module, and a decoder."""
 
@@ -46,6 +87,7 @@ class RNNModel(nn.Module):
         nn.init.uniform_(self.decoder.weight, -initrange, initrange)
 
     def forward(self, input, hidden):
+        import pdb; pdb.set_trace()
         emb = self.drop(self.encoder(input))
         output, hidden = self.rnn(emb, hidden)
         output = self.drop(output)
