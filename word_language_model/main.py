@@ -163,7 +163,7 @@ def evaluate(data_source):
             else:
                 output, hidden = model(data, hidden)
                 hidden = repackage_hidden(hidden)
-            total_loss += len(data) * criterion(output, targets).item()
+            total_loss += criterion(output, targets).item()
     return total_loss / (len(data_source) - 1)
 
 
@@ -204,7 +204,7 @@ def train(optimizer):
             elapsed = time.time() - start_time
             print('| epoch {:3d} | {:5d}/{:5d} batches | lr {:02.2f} | ms/batch {:5.2f} | '
                     'loss {:5.2f} | ppl {:8.2f}'.format(
-                epoch, batch, len(train_data) // args.bptt, lr,
+                epoch, batch, len(train_data), lr,
                 elapsed * 1000 / args.log_interval, cur_loss, math.exp(cur_loss)))
             total_loss = 0
             start_time = time.time()
