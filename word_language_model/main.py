@@ -183,7 +183,6 @@ def train(optimizer):
         else:
             hidden = repackage_hidden(hidden)
             output, hidden = model(data, hidden)
-        import pdb;pdb.set_trace()
         loss = criterion(output, targets)
         loss.backward()
 
