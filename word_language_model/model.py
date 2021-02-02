@@ -29,7 +29,7 @@ class FNNModel(nn.Module):
         nn.init.uniform_(self.fnn.weight, -initrange, initrange)
         nn.init.zeros_(self.decoder.weight)
         nn.init.uniform_(self.decoder.weight, -initrange, initrange)
-
+    #'''
     def forward(self, input):
         # input: [len, batch_size]
         in_size = input.size()
@@ -50,7 +50,10 @@ class FNNModel(nn.Module):
         emb = self.drop(self.encoder(input)) # emb: [n-1, batch_size, hidden]
         emb = emb.permute(1,0,2)
         emb = emb.view(input.size()[1], -1) # emb: [batch_size, (n-1)*hidden]
-        output = self.fnn(emb)
+        output = self.tanh(self.fnn(emb)) # emb: [batch_size, hidden]
+        output = self.drop(output)
+        decoded = self.decoder(output) # decoded: [batch_size, self.n_token]
+        return F.log_softmax(decoded, dim=1)
     '''
 
 class RNNModel(nn.Module):
