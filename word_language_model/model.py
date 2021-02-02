@@ -31,10 +31,10 @@ class FNNModel(nn.Module):
     def forward(self, input):
         # input: [len, batch_size]
         in_size = input.size()
-        input = F.pad(input, (0,0,self.n-1,0), "constant", 0) # input: [n-1+len, batch_size], assume <pad> idx = 0
+        input = F.pad(input, (0,0,self.n-2,0), "constant", 0) # input: [n-2+len, batch_size], assume <pad> idx = 0
         #import pdb;pdb.set_trace()
-        emb = self.drop(self.encoder(input)) # emb: [n-1+len, batch_size, hidden]
-        emb = emb.unfold(0,self.n-1,1)[:-1] # sliding window, emb: [len,n-1,batch_size,hidden]
+        emb = self.drop(self.encoder(input)) # emb: [n-2+len, batch_size, hidden]
+        emb = emb.unfold(0,self.n-1,1) # sliding window, emb: [len,n-1,batch_size,hidden]
         emb = emb.permute(0,2,1,3) # emb: [len, batch_size, n-1, hidden]
         emb = emb.contiguous().view(in_size[0], in_size[1], -1) # emb: [len, batch_size, (n-1)*hidden]
         output = self.fnn(emb) # output: [len, batch_size, hidden]
