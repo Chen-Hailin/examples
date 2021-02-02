@@ -139,6 +139,11 @@ def get_batch(source, i):
     target = source[i+1:i+1+seq_len].view(-1)
     return data, target
 
+def get_fnn_batch(source, i):
+    data = source[i-args.n+1:i]
+    target = source[i].view(-1)
+    return data, target
+
 
 def evaluate(data_source):
     # Turn on evaluation mode which disables dropout.
@@ -148,8 +153,8 @@ def evaluate(data_source):
     if args.model != 'Transformer' and args.model != 'FNN':
         hidden = model.init_hidden(eval_batch_size)
     with torch.no_grad():
-        for i in range(0, data_source.size(0) - 1, args.bptt):
-            data, targets = get_batch(data_source, i)
+        for i in range(args.n-1, data_source.size(0) - 1, 1):   
+            data, targets = get_fnn_batch(data_source, i)
             if args.model == 'Transformer':
                 output = model(data)
                 output = output.view(-1, ntokens)
@@ -170,8 +175,8 @@ def train(optimizer):
     ntokens = len(corpus.dictionary)
     if args.model != 'Transformer' and args.model != 'FNN':
         hidden = model.init_hidden(args.batch_size)
-    for batch, i in enumerate(range(0, train_data.size(0) - 1, args.bptt)):
-        data, targets = get_batch(train_data, i)
+    for batch, i in enumerate(range(args.n-1, train_data.size(0) - 1, 1)):
+        data, targets = get_fnn_batch(train_data, i)
         # Starting each batch, we detach the hidden state from how it was previously produced.
         # If we didn't, the model would try backpropagating all the way to start of the dataset.
         optimizer.zero_grad()
