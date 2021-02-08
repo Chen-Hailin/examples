@@ -226,8 +226,8 @@ def calculate_sims(word_pair_sim):
             for word in [word_a, word_b]:
                 idx += [corpus.dictionary.get_idx(word_a)]
             idx = torch.tensor(idx).type(torch.int64)
-            idx = idx.unsqueeze(0) # [1, 2]
-            emb = model.encoder() # [1, 2, hidden]
+            idx = idx.unsqueeze(0).to(device) # [1, 2]
+            emb = model.encoder(idx) # [1, 2, hidden]
             model_sim = F.cosine_similarity(emb[:,0],emb[:,1]).cpu().detach().numpy()[0]
             model_sims.append(model_sim)
     return human_sims, model_sims
