@@ -224,7 +224,7 @@ def calculate_sims(word_pair_sim):
             human_sims.append(sim)
             idx = []
             for word in [word_a, word_b]:
-                idx += [corpus.dictionary.get_idx(word_a)]
+                idx += [corpus.dictionary.get_idx(word)]
             idx = torch.tensor(idx).type(torch.int64)
             idx = idx.unsqueeze(0).to(device) # [1, 2]
             emb = model.encoder(idx) # [1, 2, hidden]
