@@ -22,6 +22,8 @@ parser.add_argument('--outf', type=str, default='generated.txt',
                     help='output file for generated text')
 parser.add_argument('--words', type=int, default='1000',
                     help='number of words to generate')
+parser.add_argument('--n', type=int, default=5,
+                    help='length of context words')
 parser.add_argument('--seed', type=int, default=1111,
                     help='random seed')
 parser.add_argument('--cuda', action='store_true',
@@ -31,6 +33,9 @@ parser.add_argument('--temperature', type=float, default=1.0,
 parser.add_argument('--log-interval', type=int, default=100,
                     help='reporting interval')
 args = parser.parse_args()
+
+prompt = "The initial development of this technique occurred in 1969 by Vernon Dvorak"
+prompt_words = prompt.split()
 
 # Set the random seed manually for reproducibility.
 torch.manual_seed(args.seed)
@@ -55,6 +60,8 @@ is_feedforward_model = hasattr(model, 'model_type') and model.model_type == 'FNN
 if not is_transformer_model or not is_feedforward_model:
     hidden = model.init_hidden(1)
 input = torch.randint(ntokens, (1, 1), dtype=torch.long).to(device)
+if is_feedforward_model:
+    input = torch.randint(ntokens, (1, arg.n-1), dtype=torch.long).to(device)
 
 with open(args.outf, 'w') as outf:
     with torch.no_grad():  # no tracking history
@@ -67,13 +74,12 @@ with open(args.outf, 'w') as outf:
                 input = torch.cat([input, word_tensor], 0)
             elif is_feedforward_model:
                 output = model(input)
-                word_weights = output[-1].squeeze().div(args.temperature).exp().cpu()
+                word_weights = output.squeeze().div(args.temperature).exp().cpu()
                 word_idx = torch.multinomial(word_weights, 1)[0]
                 word_tensor = torch.Tensor([[word_idx]]).long().to(device)
                 input = torch.cat([input, word_tensor], 0)[-args.n:]
             else:
                 output, hidden = model(input, hidden)
-                import pdb;pdb.set_trace()
                 word_weights = output.squeeze().div(args.temperature).exp().cpu()
                 word_idx = torch.multinomial(word_weights, 1)[0]
                 input.fill_(word_idx)
