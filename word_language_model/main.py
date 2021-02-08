@@ -6,6 +6,8 @@ import os
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import torch.nn.functional as F
+
 import torch.onnx
 from scipy import stats
 
@@ -218,7 +220,7 @@ def calculate_sims(word_pair_sim):
     model.eval()
     model_sims, human_sims = [], []
     for (word_a,word_b,sim) in word_pair_sim:
-        if corpus.dictionary.has_word(word_a) and corpus.dictionary.has_word(b):
+        if corpus.dictionary.has_word(word_a) and corpus.dictionary.has_word(word_b):
             human_sims.append(sim)
             idx = []
             for word in [word_a, word_b]:
@@ -226,7 +228,7 @@ def calculate_sims(word_pair_sim):
             idx = torch.tensor(idx).type(torch.int64)
             idx = idx.unsqueeze(0) # [1, 2]
             emb = model.encoder() # [1, 2, hidden]
-            model_sim = emb[0,0] * emb[0,1]
+            model_sim = F.cosine_similarity(emb[:,0],emb[:,1]).cpu().detach().numpy()[0]
             model_sims.append(model_sim)
     return human_sims, model_sims
     
@@ -290,7 +292,6 @@ with open(args.sim_data, 'r') as f:
     for line in f:
         word_a, word_b, sim = line.split()
         word_pair_sim.append((word_a, word_b, float(sim)))
-import pdb;pdb.set_trace()
 human_sims, model_sims = calculate_sims(word_pair_sim)
 print(stas.spearmanr(model_sims, human_sims))
 
