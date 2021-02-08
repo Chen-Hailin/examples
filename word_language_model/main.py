@@ -289,7 +289,7 @@ word_pair_sim = [] # list of list (word_a, word_b, human_similarity)
 with open(args.sim_data, 'r') as f:
     for line in f:
         word_a, word_b, sim = line.split()
-        word_pair_sim.apped((word_a, word_b, float(sim)))
+        word_pair_sim.append((word_a, word_b, float(sim)))
 import pdb;pdb.set_trace()
 human_sims, model_sims = calculate_sims(word_pair_sim)
 print(stas.spearmanr(model_sims, human_sims))
