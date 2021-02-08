@@ -61,7 +61,7 @@ if not is_transformer_model and not is_feedforward_model:
     hidden = model.init_hidden(1)
 input = torch.randint(ntokens, (1, 1), dtype=torch.long).to(device)
 if is_feedforward_model:
-    input = torch.randint(ntokens, (1, args.n-1), dtype=torch.long).to(device)
+    input = torch.randint(ntokens, (args.n-1, 1), dtype=torch.long).to(device)
 
 with open(args.outf, 'w') as outf:
     with torch.no_grad():  # no tracking history
