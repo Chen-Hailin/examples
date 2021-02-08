@@ -13,6 +13,12 @@ class Dictionary(object):
             self.word2idx[word] = len(self.idx2word) - 1
         return self.word2idx[word]
 
+    def has_word(self, word):
+        return word in self.word2idx
+
+    def get_idx(self, word):
+        return self.word2idx[word]
+
     def __len__(self):
         return len(self.idx2word)
 

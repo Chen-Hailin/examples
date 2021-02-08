@@ -7,6 +7,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.onnx
+from scipy import stats
 
 import data
 import model
@@ -14,6 +15,8 @@ import model
 parser = argparse.ArgumentParser(description='PyTorch Wikitext-2 RNN/LSTM/GRU/Transformer Language Model')
 parser.add_argument('--data', type=str, default='./data/wikitext-2',
                     help='location of the data corpus')
+parser.add_argument('--sim_data', type=str, default='./data/wordsim353_sim_rel/wordsim_similarity_goldstandard.txt',
+                    help='location of the wrod pair similarity metrics')
 parser.add_argument('--model', type=str, default='FNN',
                     help='type of recurrent net (RNN_TANH, RNN_RELU, LSTM, GRU, Transformer,FNN)')
 parser.add_argument('--emsize', type=int, default=200,
@@ -211,6 +214,22 @@ def train(optimizer):
         if args.dry_run:
             break
 
+def calculate_sims(word_pair_sim):
+    model.eval()
+    model_sims, human_sims = [], []
+    for (word_a,word_b,sim) in word_pair_sim:
+        if corpus.dictionary.has_word(word_a) and corpus.dictionary.has_word(b):
+            human_sims.append(sim)
+            idx = []
+            for word in [word_a, word_b]:
+                idx += [corpus.dictionary.get_idx(word_a)]
+            idx = torch.tensor(idx).type(torch.int64)
+            idx = idx.unsqueeze(0) # [1, 2]
+            emb = model.encoder() # [1, 2, hidden]
+            model_sim = emb[0,0] * emb[0,1]
+            model_sims.append(model_sim)
+    return human_sims, model_sims
+    
 
 def export_onnx(path, batch_size, seq_len):
     print('The model is also exported in ONNX format at {}'.
@@ -264,6 +283,16 @@ print('=' * 89)
 print('| End of training | test loss {:5.2f} | test ppl {:8.2f}'.format(
     test_loss, math.exp(test_loss)))
 print('=' * 89)
+
+# Calculate word embedding similarity 
+word_pair_sim = [] # list of list (word_a, word_b, human_similarity)
+with open(args.sim_data, 'r') as f:
+    for line in f:
+        word_a, word_b, sim = line.split()
+        word_pair_sim.apped((word_a, word_b, float(sim)))
+import pdb;pdb.set_trace()
+human_sims, model_sims = calculate_sims(word_pair_sim)
+print(stas.spearmanr(model_sims, human_sims))
 
 if len(args.onnx_export) > 0:
     # Export the model in ONNX format.
