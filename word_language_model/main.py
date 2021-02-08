@@ -293,7 +293,7 @@ with open(args.sim_data, 'r') as f:
         word_a, word_b, sim = line.split()
         word_pair_sim.append((word_a, word_b, float(sim)))
 human_sims, model_sims = calculate_sims(word_pair_sim)
-print(stas.spearmanr(model_sims, human_sims))
+print(stats.spearmanr(model_sims, human_sims))
 
 if len(args.onnx_export) > 0:
     # Export the model in ONNX format.
