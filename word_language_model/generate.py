@@ -73,12 +73,11 @@ with open(args.outf, 'w') as outf:
                 word_tensor = torch.Tensor([[word_idx]]).long().to(device)
                 input = torch.cat([input, word_tensor], 0)
             elif is_feedforward_model:
-                import pdb; pdb.set_trace()
                 output = model(input)
                 word_weights = output.squeeze().div(args.temperature).exp().cpu()
                 word_idx = torch.multinomial(word_weights, 1)[0]
                 word_tensor = torch.Tensor([[word_idx]]).long().to(device)
-                input = torch.cat([input, word_tensor], 0)[-args.n:]
+                input = torch.cat([input, word_tensor], 0)[-args.n+1:]
             else:
                 output, hidden = model(input, hidden)
                 word_weights = output.squeeze().div(args.temperature).exp().cpu()
