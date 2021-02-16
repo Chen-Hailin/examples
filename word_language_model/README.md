@@ -1,23 +1,13 @@
-# Word-level language modeling RNN
+# Word-level language modeling FNN
 
-This example trains a multi-layer RNN (Elman, GRU, or LSTM) on a language modeling task.
+This example trains a one layer FNN on a language modeling task.
 By default, the training script uses the Wikitext-2 dataset, provided.
 The trained model can then be used by the generate script to generate new text.
 
 ```bash 
-python main.py --cuda --epochs 6           # Train a LSTM on Wikitext-2 with CUDA
-python main.py --cuda --epochs 6 --tied    # Train a tied LSTM on Wikitext-2 with CUDA
-python main.py --cuda --epochs 6 --model Transformer --lr 5   
-                                           # Train a Transformer model on Wikitext-2 with CUDA
-python main.py --cuda --tied               # Train a tied LSTM on Wikitext-2 with CUDA for 40 epochs
-python generate.py                         # Generate samples from the trained LSTM model.
-python generate.py --cuda --model Transformer
-                                           # Generate samples from the trained Transformer model.
+python main.py  --cuda --epochs 7 --batch_size 128 --log-interval 2000 --n 11 --emsize 500 --nhid 500 --lr 1e-4 --tied # Train a FNN on Wikitext-2 with CUDA
+python generate.py --n 11 --checkpoint model_fnn_best.pt --cuda  # Generate samples from the trained FNN model.
 ```
-
-The model uses the `nn.RNN` module (and its sister modules `nn.GRU` and `nn.LSTM`)
-which will automatically use the cuDNN backend if run on CUDA with cuDNN installed.
-
 During training, if a keyboard interrupt (Ctrl-C) is received,
 training is stopped and the current model is evaluated against the test dataset.
 
@@ -27,8 +17,6 @@ The `main.py` script accepts the following arguments:
 optional arguments:
   -h, --help            show this help message and exit
   --data DATA           location of the data corpus
-  --model MODEL         type of recurrent net (RNN_TANH, RNN_RELU, LSTM, GRU,
-                        Transformer)
   --emsize EMSIZE       size of word embeddings
   --nhid NHID           number of hidden units per layer
   --nlayers NLAYERS     number of layers
@@ -48,13 +36,23 @@ optional arguments:
   --nhead NHEAD         the number of heads in the encoder/decoder of the
                         transformer model
 ```
-
-With these arguments, a variety of models can be tested.
-As an example, the following arguments produce slower but better models:
-
+Sample outputs of training:
 ```bash
-python main.py --cuda --emsize 650 --nhid 650 --dropout 0.5 --epochs 40           
-python main.py --cuda --emsize 650 --nhid 650 --dropout 0.5 --epochs 40 --tied    
-python main.py --cuda --emsize 1500 --nhid 1500 --dropout 0.65 --epochs 40        
-python main.py --cuda --emsize 1500 --nhid 1500 --dropout 0.65 --epochs 40 --tied 
+| epoch   1 |  2000/16317 batches | lr 0.00 | ms/batch  7.59 | loss  7.34 | ppl  1544.96
+| epoch   1 |  4000/16317 batches | lr 0.00 | ms/batch  7.33 | loss  6.65 | ppl   772.25
+| epoch   1 |  6000/16317 batches | lr 0.00 | ms/batch  7.31 | loss  6.47 | ppl   647.87
+| epoch   1 |  8000/16317 batches | lr 0.00 | ms/batch  7.31 | loss  6.35 | ppl   574.90
+| epoch   1 | 10000/16317 batches | lr 0.00 | ms/batch  7.32 | loss  6.27 | ppl   530.93
+| epoch   1 | 12000/16317 batches | lr 0.00 | ms/batch  7.33 | loss  6.20 | ppl   494.95
+| epoch   1 | 14000/16317 batches | lr 0.00 | ms/batch  7.36 | loss  6.11 | ppl   449.27
+| epoch   1 | 16000/16317 batches | lr 0.00 | ms/batch  7.33 | loss  6.05 | ppl   425.08
+-----------------------------------------------------------------------------------------
+| end of epoch   1 | time: 129.63s | valid loss  5.75 | valid ppl   314.34
+......
+====================================================================================
+| End of training | test loss  5.24 | test ppl   189.51
+====================================================================================
+SpearmanrResult(correlation=0.32094756497766097, pvalue=1.0573681235152218e-05)
 ```
+
+The generated texts from tied and non-tied model are saved respectively at generated_tied.txt and generated_non_tied.txt
